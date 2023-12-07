@@ -64,7 +64,7 @@ router.put('/:id', function(request,response){
    const nome = request.body.nome;
     const telefono = request.body.telefono;
     const email = request.body.email;
-   const query = "UPDATE `contatti` SET `nome` = ?, `telefono` = ?, `email` = ? WHERE id = ?" ;
+   const query = "UPDATE `contatti` SET `nome` = ?, `telefono` = ?, `email` = ? WHERE `id` = ?" ;
    connection.query(query,[nome, telefono, email, id], function(err,result){
     if(err){
         console.error(err);
