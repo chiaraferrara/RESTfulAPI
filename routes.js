@@ -60,7 +60,19 @@ router.post('/', function(request,response){
 })
 
 router.put('/:id', function(request,response){
-   response.send('PUT DI ID');
+   const id = request.params.id;
+   const nome = request.body.nome;
+    const telefono = request.body.telefono;
+    const email = request.body.email;
+   const query = "UPDATE `contatti` SET `nome` = ?, `telefono` = ?, `email` = ? WHERE id = ?" ;
+   connection.query(query,[nome, telefono, email, id], function(err,result){
+    if(err){
+        console.error(err);
+        return;
+    }
+    response.send("Contatto aggiornato con successo: " + nome + "<br/> " + telefono + "<br/>" + email)
+   })
+
 })
 
 router.delete('/:id',function(request,response){
