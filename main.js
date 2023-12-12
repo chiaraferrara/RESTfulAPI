@@ -1,59 +1,28 @@
-const express = require('express');
-const app = express();
-const routes = require('./routes.js');
-const mysql = require('mysql2');
-app.use(express.json()); //middleware che viene eseguito ogni volta che viene fatta una request e una response.
+var mongo = require("mongodb");
+var MongoClient = require("mongodb").MongoClient;
+var url = "mongodb://localhost:27017/";
 
-const connection = mysql.createConnection({
-    host: "localhost",    
-    user: "root",
-    password: "",    
-    database: "nodedb",
-    port:"3306",
-});
+MongoClient.connect(url, function (err, db) {
+  if (err) throw err;
 
+  console.log("Database creato!");
+  var dbo = db.db("NodeDB");
 
-connection.connect(function(err) {
-    if (err) {
-        console.error('Errore: ', err);
-        return;
-    }
+  dbo.createCollection("contatti", function (err, res) {
+    if (err) throw err;
 
-    console.log('Connesso al database');
+    console.log("Collection creata!");
 
+    var myobj = {
+      nome: "Mario Rossi",
+      telefono: "232141221",
+      email: "ewrewrwe@gmail.com"
+    };
 
-    connection.query("CREATE DATABASE IF NOT EXISTS NodeDB", function(err, result) {
-        if (err) {
-            console.error('Errore: ', err);
-            return;
-        }
-        console.log("Database creato o già esistente");
-        
- 
-        connection.query("USE NodeDB", function(err, result) {
-            if (err) {
-                console.error('Errore: ', err);
-                return;
-            }
-            
- 
-            const sql = "CREATE TABLE IF NOT EXISTS contatti (id INT(100),nome VARCHAR(255), telefono VARCHAR(255), email VARCHAR(255))";
-            connection.query(sql, function(err, result) {
-                if (err) {
-                    console.error('Errore: ', err);
-                    return;
-                }
-                console.log("Tabella 'contatti' creata o già esistente");
-            });
-        });
+    dbo.collection("contatti").insertOne(myobj, function (err, res) {
+      if (err) throw err;
+      console.log("Documento inserito");
+      db.close(); // Close the connection here after all operations are done
     });
-});
-
-// Use routes for '/contatti'
-app.use('/contatti', routes);
-
-// Start the server
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`Porta: ${PORT}`);
+  });
 });
