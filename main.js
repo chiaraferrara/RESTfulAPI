@@ -1,17 +1,24 @@
-var mongo = require("mongodb");
-var MongoClient = require("mongodb").MongoClient;
-var url = "mongodb://localhost:27017/";
 
-MongoClient.connect(url, function (err, db) {
-  if (err) throw err;
+const { MongoClient, ServerApiVersion } = require('mongodb');
+const uri = "mongodb+srv://admin:password1234@NodeDB.9ctukqq.mongodb.net/?retryWrites=true&w=majority";
 
-  console.log("Database creato!");
-  var dbo = db.db("NodeDB");
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
+});
 
-  dbo.createCollection("contatti", function (err, res) {
-    if (err) throw err;
+async function run() {
+  try {
+    console.log("Connesso?");
 
-    console.log("Collection creata!");
+    await client.connect();
+    console.log("Connesso")
+    const database = client.db("NodeDB");
+    const collection = database.collection("contatti");
+
 
     var myobj = {
       nome: "Mario Rossi",
@@ -19,10 +26,16 @@ MongoClient.connect(url, function (err, db) {
       email: "ewrewrwe@gmail.com"
     };
 
-    dbo.collection("contatti").insertOne(myobj, function (err, res) {
-      if (err) throw err;
-      console.log("Documento inserito");
-      db.close(); // Close the connection here after all operations are done
-    });
-  });
-});
+    const result = await collection.insertOne(myobj);
+    console.log("Contatto inserito");
+
+    await client.db("admin").command({ ping: 1 });
+
+  } catch (err) {
+    console.log(err)
+  }
+  finally {
+   await client.close();
+  }
+}
+run();
