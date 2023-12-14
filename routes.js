@@ -1,101 +1,147 @@
 var express = require("express");
 var router = express.Router();
-var mongo = require("mongodb");
-const bodyParser = require("body-parser");
-router.use(bodyParser.json());
+const client = require('./connection');
+const ObjectId = require('mongodb').ObjectId;
 
-var MongoClient = require("mongodb").MongoClient;
-var url = "mongodb://localhost:27017/mydb";
 
-MongoClient.connect(url, function (err, db) {
-  if (err) throw err;
-  var dbo = db.db("mydb");
-  dbo.createCollection("contatti", function (err, res) {
-    if (err) throw err;
-    console.log("Database Creato!");
-    db.close();
-  });
+router.get("/", async function (_, response) {
+  try{
+    const db = await client.db('NodeDB');
+    const data = await db.collection('contatti').find().toArray();
+    response.json({
+      status: "Successo",
+      message: "Tutti i contatti",
+      data: data
+    })
+  }catch(error){
+    response.json({
+      status : 'error',
+      message: 'impossibile connettersi al DB.'
+    })
+  }
 });
 
-// const connection = mysql.createConnection({
-//     host: "localhost",
-//     user: "root",
-//     password: "",
-//     database: "nodedb",
-//     port:"3306",
-// });
+router.get("/:id", async function (request, response) {
+  const id = new ObjectId(request.params.id)
+  try{
+    const db = await client.db('NodeDB');
+    const data = await db.collection('contatti').findOne({
+      _id:id
+    });
+    response.json({
+      status: 'successo',
+      message: 'singolo contatto',
+      data:data,
+    })
+  }catch(error){
+    console.log(error);
+    response.json({
+      status: 'error',
+      message: 'connessione con il database fallita.'
+    })
 
-router.get("/", function (request, response) {
-  const query = "SELECT * FROM `contatti`";
-  connection.query(query, function (err, result) {
-    if (err) {
-      console.error("Errore: ", err);
-      return;
-    }
-    response.send(result);
-  });
+  }
 });
 
-router.get("/:id", function (request, response) {
-  const id = request.params.id;
-  const query = "SELECT * FROM `contatti` WHERE `id` = " + id;
-  connection.query(query, [id], function (err, result) {
-    if (err) {
-      console.error("Errore: ", err);
-      return;
-    }
-    response.send(result);
-  });
-});
-
-router.post("/", function (request, response) {
+router.post("/", async function (request, response) {
   // const id = request.body.id;
-    var dbo = db.db("mydb");
-  var myobj = {
-  nome : request.body.nome,
-  telefono : request.body.telefono,
-  email : request.body.email,
+  const {nome, telefono, email} = request.body;
+try{
+  const db = client.db('NodeDB');
+  const result = await db.collection('contatti').insertOne({
+    nome: nome,
+    telefono: telefono,
+    email: email
+  })
+  if (result.acknowledged){
+    response.json({
+      status: 'Successo',
+      message: 'Aggiunto con successo'
+    })
+  } else {
+    response.json({
+      status: 'Errore',
+      message: 'Non aggiunto!'
+    })
+  } 
+}catch (error){
+    response.json({
+      status: 'Errore!',
+      message: 'Connessione fallita.'
+    })
   }
  
 });
 
-router.put("/:id", function (request, response) {
+router.put("/:id", async function (request, response) {
   const id = request.params.id;
   const nome = request.body.nome;
   const telefono = request.body.telefono;
   const email = request.body.email;
-  const query =
-    "UPDATE `contatti` SET `nome` = ?, `telefono` = ?, `email` = ? WHERE `id` = ?";
-  connection.query(query, [nome, telefono, email, id], function (err, result) {
-    if (err) {
-      console.error(err);
-      return;
+  
+  try{
+    const db = client.db('NodeDB');
+    const result = await db.collection('contatti').updateOne({
+      _id:ObjectId(id),
+    }, {
+        $set:{
+          nome : nome,
+          telefono : telefono,
+          email: email
+        }
+      
+    });
+    if(result.acknowledged){
+      response.json({
+        status: 'successo',
+        message: 'Contatto aggiornato con successo'
+      })
+    }else{
+      response.json({
+        status: 'Errore!',
+        message: 'Aggiornamento fallito.'
+      })
     }
-    response.send(
-      "Contatto aggiornato con successo: " +
-        nome +
-        "<br/> " +
-        telefono +
-        "<br/>" +
-        email
-    );
-  });
-});
+  }catch (error){
+    response.json({
+      status: 'Errore!',
+      message: 'Connessione fallita.'
+    })
 
-router.delete("/:id", function (request, response) {
-  const id = request.params.id;
-  const query = "DELETE FROM `contatti` WHERE id=" + id;
-  connection.query(query, [id], function (error, results) {
-    if (error) {
-      console.error(err);
-      return;
+  }
+})
+
+router.delete("/:id", async function (request, response) {
+  const id = new ObjectId(request.params.id)
+ 
+  try {
+    const db = client.db('NodeDB');
+    const result = await db.collection('contatti').deleteOne({
+        _id:id
+    });
+
+    if (result.acknowledged) {
+        response.json({
+            status: 'successo',
+            message: 'Eliminazione avvenuta con sucesso.',
+        });
+    } else {
+        response.json({
+            status: 'Errore',
+            message: 'Eliminazione fallita.',
+        });
     }
-    console.log("Contatto eliminato: " + results.affectedRows);
-    response.send("Contatto eliminato con successo");
-  });
+} catch (error) {
+    response.json({
+        status: 'error',
+        message: 'Connessione con il database fallita.',
+    });
+}
 });
 
 router.all("*", (request, response) => {
   response.send("<h1>Pagina non trovata.</h1>");
 });
 module.exports = router;
+
+
