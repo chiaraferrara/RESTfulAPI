@@ -74,15 +74,13 @@ try{
 });
 
 router.put("/:id", async function (request, response) {
-  const id = request.params.id;
-  const nome = request.body.nome;
-  const telefono = request.body.telefono;
-  const email = request.body.email;
+  const id = new ObjectId(request.params.id)
+  const { nome, telefono, email} = request.body;
   
   try{
     const db = client.db('NodeDB');
     const result = await db.collection('contatti').updateOne({
-      _id:ObjectId(id),
+      _id:id,
     }, {
         $set:{
           nome : nome,
